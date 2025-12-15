@@ -510,10 +510,3 @@ export default function ChatPage() {
   )
 }
 
-// Extend Window interface for TypeScript
-declare global {
-  interface Window {
-    SpeechRecognition: any
-    webkitSpeechRecognition: any
-  }
-}
