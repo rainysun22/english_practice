@@ -102,14 +102,12 @@ export async function POST(request: NextRequest) {
 
 Important instructions:
 1. Always respond in British English with appropriate accent characteristics
-2. Keep responses natural and conversational (2-3 sentences)
-3. Be encouraging and supportive
-4. Use appropriate British expressions and vocabulary
-5. After your response, analyze the user's input for:
-   - Grammar mistakes
-   - Better British English expressions
-   - Pronunciation tips (if applicable)
-6. Provide corrections in a helpful, non-judgmental way`
+2. Keep responses SHORT and natural (1-2 sentences maximum)
+3. If the user's English is correct, simply praise them briefly (e.g., "Brilliant!" or "Well said!") - NO explanations
+4. Only provide corrections or suggestions when there are actual mistakes
+5. Be encouraging and friendly
+6. Use appropriate British expressions and vocabulary
+7. Respond quickly and concisely`
 
     const conversationMessages = [
       { role: 'system', content: systemPrompt },
@@ -120,26 +118,25 @@ Important instructions:
     ]
 
     // Get AI response
-    const response = await callAI(conversationMessages, config)
+    const response = await callAI(conversationMessages, config, {
+      temperature: 0.7,
+      max_tokens: 150, // 减少token数量，提升速度
+    })
 
     // Analyze user input for corrections and scoring
-    const analysisPrompt = `Analyze this English sentence for a British English learner: "${userInput}"
+    const analysisPrompt = `Analyze this English sentence: "${userInput}"
 
-Provide:
-1. A corrected version if there are mistakes (or "No corrections needed" if perfect)
-2. An explanation of any corrections
-3. Scores out of 100 for:
-   - Pronunciation (based on word choice and British English usage)
-   - Fluency (sentence structure and naturalness)
-   - Accuracy (grammar and spelling)
-   - Overall score (average)
+Rules:
+- If the sentence is CORRECT, set "corrected" to the same as "original" and "explanation" to empty string ""
+- Only provide corrections if there are actual mistakes
+- Keep explanations brief (one sentence max)
 
 Respond in JSON format:
 {
   "correction": {
     "original": "original text",
-    "corrected": "corrected text or same as original",
-    "explanation": "brief explanation"
+    "corrected": "corrected text or same as original if perfect",
+    "explanation": "brief explanation or empty string if perfect"
   },
   "score": {
     "pronunciation": 85,
@@ -156,7 +153,7 @@ Respond in JSON format:
 
     const analysisResponse = await callAI(analysisMessages, config, {
       temperature: 0.3,
-      max_tokens: 400,
+      max_tokens: 200, // 减少token数量，提升速度
     })
 
     let correction = null

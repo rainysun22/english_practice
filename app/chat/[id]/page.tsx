@@ -348,8 +348,11 @@ export default function ChatPage() {
               </div>
             ))}
 
-            {/* Correction */}
-            {correction && (
+            {/* Correction - 只在有实际错误时显示 */}
+            {correction && 
+             correction.explanation && 
+             correction.explanation.trim() !== '' && 
+             correction.corrected !== correction.original && (
               <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4">
                 <h4 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
