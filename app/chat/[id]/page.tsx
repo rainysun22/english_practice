@@ -89,8 +89,15 @@ export default function ChatPage() {
         recognitionInstance.continuous = false
         recognitionInstance.interimResults = false
 
+        recognitionInstance.onstart = () => {
+          console.log('语音识别已开始')
+          setIsListening(true)
+        }
+
         recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+          console.log('语音识别结果:', event)
           const transcript = event.results[0][0].transcript
+          console.log('识别文本:', transcript)
           setInput(transcript)
           setIsListening(false)
           toast.success('语音识别完成')
@@ -104,12 +111,56 @@ export default function ChatPage() {
         }
         
         recognitionInstance.onend = () => {
+          console.log('语音识别已结束')
           setIsListening(false)
         }
 
-        recognitionInstance.onerror = () => {
+        recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error('语音识别错误:', event.error, event.message)
           setIsListening(false)
-          toast.error('语音识别失败，请检查麦克风权限')
+          
+          let errorMessage = '语音识别失败'
+          switch (event.error) {
+            case 'no-speech':
+              errorMessage = '未检测到语音，请重新尝试'
+              break
+            case 'audio-capture':
+              errorMessage = '无法访问麦克风，请检查权限设置'
+              break
+            case 'not-allowed':
+              errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问'
+              break
+            case 'network':
+              errorMessage = '网络错误，请检查网络连接'
+              break
+            default:
+              errorMessage = `语音识别错误: ${event.error}`
+          }
+          toast.error(errorMessage)
+        }
+
+        recognitionInstance.onaudiostart = () => {
+          console.log('开始接收音频')
+        }
+
+        recognitionInstance.onaudioend = () => {
+          console.log('停止接收音频')
+        }
+
+        recognitionInstance.onsoundstart = () => {
+          console.log('检测到声音')
+        }
+
+        recognitionInstance.onsoundend = () => {
+          console.log('声音结束')
+        }
+
+        recognitionInstance.onspeechstart = () => {
+          console.log('检测到语音')
+        }
+
+        recognitionInstance.onspeechend = () => {
+          console.log('语音结束')
         }
 
         setRecognition(recognitionInstance)
@@ -271,19 +322,39 @@ export default function ChatPage() {
     }
   }
 
-  const handleVoiceInput = () => {
+  const handleVoiceInput = async () => {
     if (!recognition) {
-      toast.error('您的浏览器不支持语音识别')
+      toast.error('您的浏览器不支持语音识别，请使用Chrome或Edge浏览器')
       return
     }
 
     if (isListening) {
       recognition.stop()
       setIsListening(false)
-    } else {
+      toast('已停止录音', { icon: 'ℹ️' })
+      return
+    }
+
+    // 请求麦克风权限
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => track.stop()) // 立即停止，只是测试权限
+      
+      // 权限已授予，开始语音识别
       setIsListening(true)
       recognition.start()
-      toast.success('开始录音...')
+      toast.success('开始录音，请说话...')
+    } catch (error: any) {
+      console.error('麦克风权限错误:', error)
+      setIsListening(false)
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        toast.error('麦克风权限被拒绝，请在浏览器设置中允许麦克风访问')
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        toast.error('未找到麦克风设备，请检查设备连接')
+      } else {
+        toast.error('无法访问麦克风: ' + error.message)
+      }
     }
   }
 
